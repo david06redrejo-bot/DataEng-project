@@ -32,16 +32,6 @@ The `artists` column frequently contains multiple collaborators separated by sem
 *   **Weight:** The number of times they have collaborated or the average popularity of their joint tracks.
 We can then transition this into an Adjacency Matrix to identify central nodes (the most collaborative artists) within the industry graph.
 
-## 3. Ingestion Infrastructure
-
-To ensure a reproducible, robust, and scalable data pipeline, we have implemented an ingestion script derived from [tttza/kaggle_dataset_downloader](https://github.com/tttza/kaggle_dataset_downloader/blob/main/download_dataset.py). 
-This script performs a three-stage ingestion process:
-1. **API Interfacing:** Dynamically interprets whether the target is a dataset or a specific competition.
-2. **Staged Downloading:** Fetches the `.zip` archive into a secure, temporary `./download` cache.
-3. **Automated Extraction:** Programmatically unzips the files and routes them into the `../data/raw/[dataset-name]` directory using Python's native `zipfile` and `shutil` libraries.
-
-This optimization ensures our pipeline operates smoothly without relying on system-level `unzip` commands, maximizing cross-platform compatibility across Windows and Linux environments.
-
-## 4. Conclusion
+## 3. Conclusion
 
 The Spotify Tracks dataset perfectly aligns with our infrastructure goals. It allows us to move from standard Pandas DataFrames into Scipy sparse arrays, ingest unstructured media via album art, and leverage graph theory to map the music industry—all while maintaining high code performance and analytical integrity.
