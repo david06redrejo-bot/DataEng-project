@@ -1,0 +1,17 @@
+# Virtual Environments
+.venv/
+venv/
+env/
+
+# Python caching
+__pycache__/
+*.py[cod]
+*$py.class
+.ipynb_checkpoints/
+
+# Data (Ignore all contents in data folders, but keep the directory via .keep)
+data/raw/*
+!data/raw/.keep
+data/processed/*
+!data/processed/.keep
+download/
