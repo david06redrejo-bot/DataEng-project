@@ -1,110 +1,66 @@
-import os
-import argparse
 import subprocess
-import re
+import glob
+import os
+import zipfile
+import shutil
+import argparse
 
-def parse_kaggle_link(link):
+def get_dataset(target: str, input_dir: str = "../data/raw"):
     """
-    Parses a Kaggle link to extract the dataset or competition identifier.
-    Returns a tuple (type, identifier) where type is 'dataset' or 'competition'.
+    Adapted from github.com/tttza/kaggle_dataset_downloader
+    Optimized for cross-platform (Windows/Linux) and the current project structure.
     """
-    # Remove trailing slash
-    link = link.rstrip('/')
-    
-    # Check if it's a dataset
-    dataset_match = re.search(r'kaggle\.com/datasets/([^/]+/[^/]+)', link)
-    if dataset_match:
-        return 'dataset', dataset_match.group(1)
-    
-    # Check if it's a generic link that implies a dataset
-    # e.g., https://www.kaggle.com/zsinghrahulk/global-airport-database
-    generic_match = re.search(r'kaggle\.com/([^/]+/[^/]+)$', link)
-    if generic_match and 'competitions' not in link:
-        return 'dataset', generic_match.group(1)
-        
-    # Check if it's a competition
-    comp_match = re.search(r'kaggle\.com/c/([^/]+)', link)
-    if not comp_match:
-        comp_match = re.search(r'kaggle\.com/competitions/([^/]+)', link)
-        
-    if comp_match:
-        return 'competition', comp_match.group(1)
-        
-    return None, None
+    # Parse target to extract directory name
+    if "/" in target:
+        # It's a dataset, e.g. vatsalmavro/spotify-dataset
+        dirname = target.split("/")[-1]
+        download_command = ['kaggle', 'datasets', 'download', '-d', target]
+    else:
+        # It's a competition, e.g. titanic
+        dirname = target
+        download_command = ['kaggle', 'competitions', 'download', '-c', target]
 
-def download_data(link, output_dir):
-    """
-    Downloads data from Kaggle using the Kaggle CLI.
-    """
-    req_type, identifier = parse_kaggle_link(link)
-    
-    if not req_type:
-        print(f"Error: Could not parse Kaggle link: {link}")
-        print("Expected format: https://www.kaggle.com/datasets/user/dataset-name OR https://www.kaggle.com/c/competition-name")
-        return False
-        
-    # Ensure output directory exists
-    os.makedirs(output_dir, exist_ok=True)
-    
-    print(f"Downloading {req_type}: {identifier} into {output_dir}")
-    print("Ensure you have your kaggle.json configured (usually in ~/.kaggle/).")
-    
-    try:
-        if req_type == 'dataset':
-            # Download dataset and unzip
-            cmd = ["kaggle", "datasets", "download", "-d", identifier, "-p", output_dir, "--unzip"]
-        else: # competition
-            # Download competition data
-            cmd = ["kaggle", "competitions", "download", "-c", identifier, "-p", output_dir]
+    # Prepare directories
+    download_dir = os.path.join(".", "download", dirname)
+    final_dir = os.path.join(input_dir, dirname)
+    os.makedirs(download_dir, exist_ok=True)
+    os.makedirs(final_dir, exist_ok=True)
+
+    # 1. Download
+    print(f'Downloading: {target}')
+    cmd = download_command + ['-p', download_dir]
+    r = subprocess.run(cmd, capture_output=True, text=True)
+    if r.returncode != 0:
+        print("Command failed:", " ".join(cmd))
+        if len(r.stderr) == 0:
+            raise Exception(r.stdout)
+        else:
+            raise Exception(r.stderr)
+
+    # 2. Unzip and move files
+    print('Extracting and moving files...')
+    zip_files = glob.glob(os.path.join(download_dir, '*.zip'))
+    for zf in zip_files:
+        with zipfile.ZipFile(zf, 'r') as zip_ref:
+            zip_ref.extractall(final_dir)
             
-        print(f"Running command: {' '.join(cmd)}")
-        result = subprocess.run(cmd, check=True, text=True, capture_output=True)
-        print(result.stdout)
-        
-        # Unzip if it's a competition (kaggle CLI doesn't have --unzip for comps reliably)
-        if req_type == 'competition':
-            zip_path = os.path.join(output_dir, f"{identifier}.zip")
-            if os.path.exists(zip_path):
-                print(f"Unzipping {zip_path}...")
-                import zipfile
-                with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-                    zip_ref.extractall(output_dir)
-                os.remove(zip_path) # Clean up
-                
-        print(f"Successfully downloaded to {output_dir}")
-        return True
-        
-    except subprocess.CalledProcessError as e:
-        print(f"Error executing kaggle CLI: {e}")
-        print(f"Output: {e.output}")
-        print(f"Stderr: {e.stderr}")
-        return False
-    except FileNotFoundError:
-        print("Error: The 'kaggle' CLI tool was not found.")
-        print("Please install it running: pip install kaggle")
-        return False
-    except Exception as e:
-        print(f"An unexpected error occurred: {e}")
-        return False
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Download a Kaggle dataset or competition using its URL.")
-    parser.add_argument("link", help="The full Kaggle URL (e.g. https://www.kaggle.com/datasets/uciml/iris)")
-    parser.add_argument("--out", "-o", default="../data/raw", help="Output directory path (default: ../data/raw)")
+    # Move non-zip files natively
+    files = glob.glob(os.path.join(download_dir, '*'))
+    for f in files:
+        if not f.endswith('.zip'):
+             dest = os.path.join(final_dir, os.path.basename(f))
+             shutil.move(f, dest)
+             
+    # Cleanup temporal download folder
+    shutil.rmtree(download_dir, ignore_errors=True)
     
+    print(f'Download Completed: {target}')
+    print(f'Files saved to: {final_dir}')
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description="Download a Kaggle dataset based on tttza/kaggle_dataset_downloader")
+    parser.add_argument("target", help="Dataset identifier (e.g. 'vatsalmavro/spotify-dataset' or 'titanic')")
+    parser.add_argument("--dir", default="../data/raw", help="Output directory")
     args = parser.parse_args()
     
-    # Handle relative paths from scripts directory
-    output_dir = args.out
-    if not os.path.isabs(output_dir):
-        # Resolve to real path relative to where script is executed, 
-        # but standardizing if run from project root or scripts folder
-        current_dir = os.path.basename(os.getcwd())
-        if current_dir == "scripts":
-            output_dir = os.path.abspath(os.path.join(os.getcwd(), args.out))
-        else:
-            # Assume run from project root, so ../data/raw might need adjustment to data/raw
-            # We'll just use what the user passed
-            output_dir = os.path.abspath(args.out)
-            
-    download_data(args.link, output_dir)
+    get_dataset(args.target, args.dir)
