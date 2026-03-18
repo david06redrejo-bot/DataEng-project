@@ -2,7 +2,7 @@
 
 ## 1. Executive Summary
 
-Following our technical design requirements to process and synthesize heterogeneous data formats, we have selected the **Spotify Tracks Dataset** for our Advanced Data Engineering project. This dataset contains over 114,000 distinct tracks, encompassing a rich variety of numerical audio features, categorical metadata, and implicit relational structures.
+Following our technical design requirements to process and synthesize heterogeneous data formats, we have established the architecture for a **Content-Based Music Recommender System** using the **Spotify Tracks Dataset**. This dataset contains over 114,000 distinct tracks, encompassing a rich variety of numerical audio features, categorical metadata, and implicit relational structures.
 
 The strategic reason for choosing this dataset is that it natively contains, or allows for the extraction of, all four primary data archetypes outlined in our Technical Design Report (Structured Matrices, Sparse Architectures, Unstructured Media, and Relational Graphs). This enables a comprehensive end-to-end pipeline without needing to merge completely unrelated datasets.
 
@@ -14,11 +14,11 @@ We will process this dataset to demonstrate proficiency in the four required for
 The foundational representation of this data will be a dense matrix of observations where:
 *   **Entities (Rows):** Individual songs (e.g., *track_id*).
 *   **Attributes (Columns):** The core audio features extracted by Spotify's algorithms (`danceability`, `energy`, `valence`, `tempo`, `acousticness`, etc.).
-**Engineering Plan:** We will perform Exploratory Data Analysis (EDA) on this dense matrix to identify correlations between audio features and track popularity. We will apply rigorous statistical methods to identify and impute any missingness (MCAR, MAR, MNAR) if present.
+**Engineering Plan:** We will map this dense matrix to build the core nearest-neighbor mapping of the **Recommender System**. Audio features will be algorithmically isolated, standardized (using Z-score mapping or MinMax scaling), and scrubbed of inconsistencies (MCAR, MAR, MNAR) to establish an unbreakable numerical pipeline for calculating Cosine Similarities.
 
 ### 2.2. Sparse Matrix Architectures
 The dataset contains highly categorical and high-dimensional features, specifically the `track_genre` and the `artists` columns. If we were to one-hot encode every artist or genre across 114,000 tracks, the resulting dense matrix would be computationally inefficient and memory-bound.
-**Engineering Plan:** We will convert these categorical associations into **Compressed Sparse Row (CSR)** formats using `scipy.sparse`. This will drastically reduce memory footprint when preparing the dataset for machine learning models (like genre classification or popularity prediction), demonstrating $O(n)$ efficiency.
+**Engineering Plan:** The Recommender System cannot ingest dense categorical data across 114,000 iterations without severe memory starvation. We will invoke `scipy.sparse` to architect the genres and artists into **Compressed Sparse Row (CSR)** geometries. These CSR vectors will be synthesized with the normalized Dense Audio Matrix to produce highly robust similarity scores at $O(n)$ optimization speeds.
 
 ### 2.3. Unstructured Data Synthesis (Media Integration)
 While the CSV itself is structured, the entities represent rich media.
@@ -34,4 +34,4 @@ We can then transition this into an Adjacency Matrix to identify central nodes (
 
 ## 3. Conclusion
 
-The Spotify Tracks dataset perfectly aligns with our infrastructure goals. It allows us to move from standard Pandas DataFrames into Scipy sparse arrays, ingest unstructured media via album art, and leverage graph theory to map the music industry—all while maintaining high code performance and analytical integrity.
+The Spotify Tracks dataset perfectly aligns completely with building a Recommender System. It allows us to move from standard Pandas DataFrames into highly efficient Scipy sparse arrays, integrate multimedia representations via album aesthetics, and leverage graph architecture to map user/artist recommendations—ensuring maximum codebase scalability.
