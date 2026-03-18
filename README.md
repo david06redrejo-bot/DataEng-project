@@ -30,4 +30,4 @@ pip install -r requirements.txt
 Download your targeted dataset from the Kaggle platform and manually extract the CSV files into the `data/raw/` directory.
 
 ## Author
-Developed for the Advanced Data Engineering course.
+Developed by Pau Rossell and David Redrejo.
