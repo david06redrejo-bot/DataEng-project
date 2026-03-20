@@ -105,12 +105,12 @@ Raw CSV (114k tracks)
 ---
 
 ### Phase 5: Recommender Engine
-**File:** `notebooks/05_recommender_engine.ipynb`
+**File:** `notebooks/01_exploratory_data_analysis.ipynb`
 
 | Step | Description |
 |:--- |:--- |
-| 5.1 | `hstack` all sparse feature matrices (audio + genre + artists + [optional: cover art]) |
-| 5.2 | Compute the **Cosine Similarity** matrix using `sklearn.metrics.pairwise.cosine_similarity` |
+| 5.1 | `hstack` all sparse feature matrices (audio + genre + artists) |
+| 5.2 | Compute **Cosine Similarity** using `sklearn.metrics.pairwise.cosine_similarity` |
 | 5.3 | Implement `recommend(song_name, top_n=10)` function |
 | 5.4 | Output: Top-N ranked tracks with similarity scores |
 
@@ -145,3 +145,38 @@ Raw CSV (114k tracks)
 - **Memory efficiency:** Confirm CSR matrix uses ≥80% less memory than dense equivalent
 - **Relevance quality:** Manually validate top-10 recommendations for genre coherence
 - **Pipeline integrity:** All 4 archetypes must be implemented and demonstrable
+
+---
+
+## 7. Recommender Engine — Bug Fixes (v2)
+
+The original `recommend()` function had three critical issues that caused it to return poor or duplicate results:
+
+### Problems identified
+
+| # | Bug | Root cause |
+|:--|:----|:-----------|
+| 1 | **Same song recommended multiple times** | The dataset contains many duplicate rows for the same `(track_name, artists)` pair (different genres/entries). The function returned all of them. |
+| 2 | **Query uses only one row** | `matches.index[0]` picked a single arbitrary row as the query vector, ignoring all other duplicate rows and their feature data. |
+| 3 | **No artist filtering** | Two different artists' versions of the same song title could appear in results because exclusion was index-based, not identity-based. |
+
+### Fixes applied
+
+```python
+# 1. Average the query vector across ALL matching rows (handles duplicates in the source data)
+match_indices = matches.index.tolist()
+song_vector = X[match_indices].mean(axis=0)
+
+# 2. Exclude every row sharing the same (track_name, artists) pair — not just index[0]
+exclude_mask = (
+    (df['track_name'].str.lower() == query_track.lower()) &
+    (df['artists'].str.lower() == query_artist.lower())
+)
+scores[exclude_mask] = -1
+
+# 3. Deduplicate results by (track_name, artists) — keep highest-similarity occurrence
+results['_key'] = results['track_name'].str.lower() + '|||' + results['artists'].str.lower()
+results = results.drop_duplicates(subset='_key', keep='first')
+```
+
+These changes ensure all 10 recommendations are **distinct songs by distinct artists**, and the query vector is more robust by averaging across all available feature rows.
