@@ -1,146 +1,230 @@
-# Technical Design Report: Advanced Data Engineering for Heterogeneous Datasets
+# Technical Design Report: Advanced Data Engineering for Music Classification
 
-## 1. Project Executive Context and Strategic Objectives
+## Authors
+Pau Rossell & David Redrejo
 
-In the modern data landscape, the strategic alignment between data representation and storage architecture is the primary determinant of system scalability and model performance. The choice between structured, sparse, and unstructured formats is not merely a storage decision, but a fundamental optimization of memory bandwidth and computational throughput. Misalignment at this stage results in high algorithmic overhead and degraded model accuracy.
+---
 
-The primary objective of this project is to architect a production-grade pipeline capable of synthesizing four distinct data archetypes:
-- Standard matrix observations
-- Optimized sparse datasets
-- Unstructured media (high-fidelity image and audio)
-- Relational graph structures
+## 1. Project Overview and Strategic Objectives
 
-Our design ensures that the underlying infrastructure respects the mathematical properties of each data type to maintain high-performance execution.
+This project implements a complete data engineering pipeline on the **Spotify Tracks Dataset** (~114,000 tracks × 20 variables). The work spans four phases: **Exploratory Data Analysis (EDA)**, **Data Cleaning & Preprocessing**, **Model Construction**, and **Model Validation**. Each phase is grounded in the theoretical foundations described below.
 
 ### Strategic Priorities
 
-* **Algorithmic Efficiency:** Implementing specialized numerical methods to achieve $\mathcal{O}(n)$ complexity in sparse operations.
-* **Feature Synthesis:** Engineering robust extraction pathways to transform raw media and relational networks into structured feature sets for downstream engineering tasks.
-* **Infrastructure Scalability:** Optimizing the memory footprint through lossless compression and high-fidelity storage formats to handle arbitrarily large datasets.
-* **Analytical Integrity:** Applying rigorous statistical remediation to handle data missingness, ensuring the pipeline is free from systematic bias.
+* **Exploratory Data Analysis:** Thorough statistical profiling and visualization of the feature space to uncover distributions, correlations, outliers, and class imbalances before any modeling is attempted.
+* **Data Integrity:** Rigorous handling of missing values, duplicates, and type inconsistencies to produce a clean, analysis-ready dataset.
+* **Dimensionality Reduction (PCA):** Application of Principal Component Analysis to compress the high-dimensional audio feature space while preserving the maximum variance, enabling both visualization and computational efficiency.
+* **Classification (KNN):** Implementation of the K-Nearest Neighbors algorithm to classify tracks by genre, with proper hyperparameter tuning and evaluation.
+* **Clustering (K-Means):** Unsupervised segmentation of the track space using K-Means clustering to discover latent groups in the data, evaluated against known genre labels.
 
-This report establishes the technical requirements for these representations, transitioning from foundational matrices to complex hierarchical and network models.
+---
 
 ## 2. Data Archetypes and Matrix Representation
 
-The **Matrix of Observations** remains the foundational unit of structured data engineering. This $\text{Rows} \times \text{Columns}$ model ($\text{Observations} \times \text{Variables}$) serves as the industry benchmark for relational analysis.
+The **Matrix of Observations** is the foundational unit of structured data engineering. This $\text{Rows} \times \text{Columns}$ model ($\text{Observations} \times \text{Variables}$) serves as the industry benchmark for relational analysis.
 
-Within this framework, we define entities as rows and attributes as columns. For example, a biometric tracking system would utilize:
+Within this framework, entities are rows and attributes are columns. For the Spotify dataset:
 
-* **Variables:** `weight`, `height`, `bmi`.
-* **Observations/Entities:** Joan, Marta, Josep, Rut, Verònica, Raquel, and Olga.
+* **Variables:** `danceability`, `energy`, `key`, `loudness`, `mode`, `speechiness`, `acousticness`, `instrumentalness`, `liveness`, `valence`, `tempo`, `popularity`, `duration_ms`, `explicit`, `track_genre`.
+* **Observations/Entities:** Each individual track.
 
-From an architectural standpoint, the challenge lies in the scalability of dense matrices. As dimensions expand, dense representations become memory-bound and computationally inefficient, particularly when the data contains significant blocks of zeros. Processing these "empty" regions in a dense format creates unnecessary memory bandwidth bottlenecks. Identifying these sparse regions is the prerequisite for transitioning to specialized compression algorithms that optimize storage without information loss.
+From an architectural standpoint, dense matrices become memory-bound and computationally inefficient as dimensions expand, particularly when a large fraction of values are zero. Identifying these sparse regions is the prerequisite for transitioning to specialized compression algorithms.
 
-## 3. Optimization via Sparse Matrix Architectures
+---
 
-Sparse matrices—where the majority of elements are zero—require specialized storage to reduce the memory footprint and enable faster numerical execution by bypassing zero-value computations.
+## 3. Data Integrity: Handling Missingness and Imputation
 
-### Core Sparse Storage Solutions
-
-The following formats evaluate the five primary storage architectures based on their strategic application in the engineering lifecycle:
-
-| Format | Full Name | Strategic Application |
-| :--- | :--- | :--- |
-| **DOK** | Dictionary of Keys | Maps `(row, column)` pairs to values; ideal for incremental matrix construction. |
-| **LIL** | List of Lists | Stores one list per row for non-zero column indices and values; efficient for row-wise modifications. |
-| **COO** | Coordinate List | Stores a list of `(row, column, value)` tuples. Useful for building matrices, but requires sorting to improve random access. |
-| **CSR** | Compressed Sparse Row | Highly efficient for numerical computation and row-wise operations. |
-| **CSC** | Compressed Sparse Column | The optimal choice for column-wise operations and slicing. |
-
-### Implementation Logic for CSR and CSC
-
-To achieve computational efficiency, Compressed Sparse Row (CSR) and Compressed Sparse Column (CSC) utilize specialized vectors:
-
-* **Vector $V$ ($v_i$):** Stores the actual non-zero values.
-* **Vector $J$ ($J_i$):** Stores the indices. In CSR, $J_i$ represents column indices; in CSC, $J_i$ represents row indices.
-
-CSR is the preferred scheme in production environments when most rows contain at least one non-zero entry, typically implemented as a vector of vectors. From a high-level integration perspective, we leverage the Pandas module `DataFrame.sparse.from_spmatrix` to bridge low-level SciPy sparse structures with high-level DataFrames, ensuring end-user analysis tools remain performant without sacrificing memory efficiency.
-
-## 4. Unstructured Data Synthesis: Image and Audio Engineering
-
-Unstructured data, such as images and audio, are mathematically matrices but lack the predefined row-variable structure of tabular data. They require a feature extraction phase to become "structured" for traditional engineering pipelines.
-
-### Image and Audio Representation Models
-
-An image is architected as an $M \times N \times P$ matrix:
-
-* **$M \times N$:** Represents total pixels ($\text{Height} \times \text{Width}$).
-* **$P$ (Bands):** Value is `3` for RGB color, `1` for Greyscale, and `31` for Hyperspectral data.
-
-For storage, we must account for pipeline latency and fidelity. While JPEG offers high compression, it is lossy and results in information degradation. For high-fidelity engineering and computer vision tasks, **PNG (lossless)** is the mandatory standard.
-
-### The Transformation Phase (Feature Extraction)
-
-To treat unstructured data as standard observations, raw pixel grids or audio spectrograms must be converted into structured features:
-
-* **Image Features:** Histograms, Image Descriptors (SIFT, HOG, LBP), or Deep-learned features.
-* **Audio Features:** Extracted from mono vectors or multi-channel spectrogram matrices.
-
-Once extracted, these features allow media to be integrated into standard statistical models.
-
-## 5. Network and Relational Modeling: Graphs and Trees
-
-For datasets representing 1:1 relations (e.g., molecular structures of glucose/caffeine or social networks), we utilize **Graphs** to capture connections that traditional matrices cannot efficiently model.
-
-### Graph Architecture and DFA Integration
-
-A Graph is defined as $G = (V, E)$, where $V$ are the vertices and $E$ are the edges.
-
-1. **Adjacency Matrix:** A matrix where rows/columns represent vertices; a `1` (or weight) indicates an edge. Crucially, the transition table of a Deterministic Finite Automaton (DFA) is functionally equivalent to an adjacency matrix.
-2. **Adjacency List:** A master list of nodes where each entry points to a second list of direct connections.
-
-**Directed and Weighted Variants:**
-* **Weighted Graphs:** Edges represent a "cost" (e.g., distance between cities like Madrid and Valencia).
-* **Directed Graphs:** Edges have specific directions, resulting in non-symmetric adjacency matrices. We track Vertex In-grade (incoming edges) and Vertex Out-grade (outgoing edges).
-
-### Transition to Hierarchical Trees
-
-Trees are extracted from larger relationship networks when a strict hierarchy is required, such as defining family dynasties (e.g., House Stark or House Lannister) from a *Game of Thrones* social graph.
-
-**Precise Tree Terminology:**
-* **Root:** The top-level node.
-* **Internal Nodes:** Nodes with both parent and child connections.
-* **Leaves:** Termination nodes with no descendants.
-* **Path:** A sequence of vertices and edges connecting a node to a descendant.
-* **Depth:** Number of edges to the root.
-* **Node Level:** Number of edges to the root + 1.
-* **Node Height:** The largest number of edges from the vertex to a leaf.
-* **Tree Height:** Defined as the height of the root node.
-
-## 6. Data Integrity: Handling Missingness and Imputation
-
-Missing data is an engineering inevitability that introduces systematic bias if handled incorrectly.
+Missing data introduces systematic bias if handled incorrectly. Proper categorization of the missingness mechanism determines the appropriate remediation strategy.
 
 ### Categorizing Missingness
 
 * **MCAR (Missing Completely at Random):** Missingness is independent of any variable value, observed or hypothetical.
 * **MAR (Missing at Random):** Propensity for missingness is related to observed data, but not the missing value itself.
-* **MNAR (Missing Not at Random):** Systematic dependency where the missing value relates to the hypothetical value (e.g., individuals with high salaries withholding income data) or other variables (e.g., gender-based suppression of age data).
+* **MNAR (Missing Not at Random):** Systematic dependency where the missing value relates to the hypothetical value or other variables.
 
-### Strategic Remediation: Deletion vs. Imputation
+### Strategic Remediation
 
-1. **Listwise Deletion (Complete-case analysis):** Acceptable only under MCAR. In other scenarios, it risks losing entire categories of observations, introducing bias.
-2. **Pairwise Deletion:** Highly problematic in production; it leads to an inconsistency problem where different components of the same model utilize different observation counts.
-3. **Imputation:** The preferred method for MAR and MNAR to maintain dataset integrity and prevent the loss of significant data clusters.
+1. **Listwise Deletion (Complete-case analysis):** Acceptable only under MCAR. In other scenarios, it risks losing entire categories of observations.
+2. **Pairwise Deletion:** Problematic in production; leads to inconsistencies where different model components use different observation counts.
+3. **Imputation:** The preferred method for MAR and MNAR. Common strategies include:
+   - *Mean/Median Imputation:* Replace missing values with the central tendency of the observed values in the same variable.
+   - *KNN Imputation:* Use the K-nearest observations (by Euclidean or other distance) to infer missing values — leveraging the local structure of the data.
 
-## 7. Infrastructure Requirements and Evaluation Criteria
+---
 
-The proposed environment for heterogeneous data processing relies on a specialized technology stack and a multi-phase implementation strategy.
+## 4. Feature Scaling and Normalization
 
-### Technology Stack
+Before applying distance-based algorithms (KNN, K-Means, PCA), all numerical features must be brought to a common scale. Without scaling, high-variance features (e.g., `tempo` ∼ 120) dominate low-variance features (e.g., `acousticness` ∼ 0.3).
 
-* **SciPy:** Low-level sparse matrix operations and storage.
-* **NumPy:** High-speed image-to-matrix ingestion and raw array manipulation.
-* **Pandas:** Seamless conversion from optimized sparse structures to analytical DataFrames.
+### StandardScaler (Z-score normalization)
 
-### Implementation Phases
+Transforms each feature $x$ to have zero mean and unit variance:
 
-1. **Validation:** Enforcing lossless standards (PNG) and validating ingestion formats.
-2. **Compression:** Implementing CSR/CSC for computational efficiency.
-3. **Extraction:** Converting unstructured media and relational graphs into feature-set variables.
-4. **Remediation:** Identifying missingness types (MCAR/MAR/MNAR) and applying statistically sound imputation.
+$$z = \frac{x - \mu}{\sigma}$$
+
+This is the mandatory preprocessing step for PCA (which assumes centered data) and strongly recommended for KNN and K-Means.
+
+### MinMaxScaler
+
+Maps values to the $[0, 1]$ interval:
+
+$$x' = \frac{x - x_{\min}}{x_{\max} - x_{\min}}$$
+
+Useful when the algorithm requires bounded inputs but does not assume Gaussian distributions.
+
+---
+
+## 5. Principal Component Analysis (PCA)
+
+### Theoretical Foundation
+
+PCA is a linear dimensionality reduction technique that projects data onto a new set of orthogonal axes called **principal components**, ordered by the amount of variance they explain.
+
+Given a centered data matrix $X \in \mathbb{R}^{n \times p}$, PCA computes the eigendecomposition of the covariance matrix:
+
+$$C = \frac{1}{n-1} X^T X$$
+
+The eigenvectors $v_1, v_2, \ldots, v_p$ of $C$ are the principal component directions, and the corresponding eigenvalues $\lambda_1 \geq \lambda_2 \geq \cdots \geq \lambda_p$ represent the variance captured by each component.
+
+### Explained Variance Ratio
+
+The fraction of total variance explained by the $k$-th component is:
+
+$$\text{EVR}_k = \frac{\lambda_k}{\sum_{i=1}^{p} \lambda_i}$$
+
+A common heuristic is to retain components until the **cumulative explained variance** exceeds a threshold (e.g., 90% or 95%).
+
+### Strategic Application
+
+* **Visualization:** Project high-dimensional data onto 2 or 3 principal components for scatter-plot visualization.
+* **Noise Reduction:** Discard low-variance components that capture noise rather than signal.
+* **Input Compression:** Feed a reduced feature matrix to downstream classifiers (KNN) or clustering algorithms (K-Means) to improve speed and mitigate the curse of dimensionality.
+
+---
+
+## 6. K-Nearest Neighbors (KNN)
+
+### Theoretical Foundation
+
+KNN is a **non-parametric, instance-based** (lazy) learning algorithm. It does not learn an explicit model; instead, it stores all training observations and classifies a new point $x$ by a majority vote among its $k$ nearest neighbors in the feature space.
+
+### Distance Metrics
+
+The most common distance metric is **Euclidean distance**:
+
+$$d(x, y) = \sqrt{\sum_{i=1}^{p} (x_i - y_i)^2}$$
+
+Other options include Manhattan distance ($L_1$) and Minkowski distance ($L_p$). Feature scaling is critical because unscaled features bias the distance computation.
+
+### Hyperparameter: $k$
+
+* **Small $k$** (e.g., 1–3): High variance, low bias — sensitive to noise and outliers.
+* **Large $k$** (e.g., 20–50): Low variance, high bias — overly smooth decision boundaries.
+
+The optimal $k$ is typically selected via **cross-validation** (e.g., 5-fold or 10-fold CV), plotting accuracy as a function of $k$ to find the elbow point.
+
+### Evaluation Metrics
+
+* **Accuracy:** Fraction of correct predictions. Misleading under class imbalance.
+* **Precision, Recall, F1-score:** Per-class metrics that account for false positives and false negatives.
+* **Confusion Matrix:** Full breakdown of predicted vs. actual labels.
+* **Classification Report:** Aggregates precision, recall, and F1 across all classes (macro, weighted averages).
+
+---
+
+## 7. K-Means Clustering
+
+### Theoretical Foundation
+
+K-Means is an **unsupervised** partitioning algorithm that assigns $n$ observations to exactly $k$ clusters by minimizing the **within-cluster sum of squares (WCSS)**:
+
+$$\text{WCSS} = \sum_{j=1}^{k} \sum_{x \in C_j} \| x - \mu_j \|^2$$
+
+where $\mu_j$ is the centroid of cluster $C_j$.
+
+### Lloyd's Algorithm
+
+1. **Initialize** $k$ centroids (randomly, or via *k-means++* for smarter initialization).
+2. **Assign** each observation to the nearest centroid.
+3. **Update** each centroid to the mean of its assigned observations.
+4. **Repeat** steps 2–3 until convergence (assignments no longer change) or a maximum iteration count is reached.
+
+### Choosing $k$: The Elbow Method
+
+Plot WCSS (inertia) as a function of $k$. The optimal $k$ is at the "elbow" — the point where increasing $k$ yields diminishing returns in variance reduction.
+
+### Choosing $k$: The Silhouette Score
+
+The **Silhouette Coefficient** for an observation $i$ is:
+
+$$s(i) = \frac{b(i) - a(i)}{\max\{a(i), b(i)\}}$$
+
+where $a(i)$ is the mean intra-cluster distance and $b(i)$ is the mean nearest-cluster distance. Values range from $-1$ (misclassified) to $+1$ (well-clustered). The mean silhouette score across all observations provides a global clustering quality metric.
+
+### Evaluation Against Ground Truth
+
+When true labels are available (as with `track_genre`), clustering quality can also be assessed via:
+
+* **Adjusted Rand Index (ARI):** Measures agreement between cluster assignments and true labels, adjusted for chance.
+* **Normalized Mutual Information (NMI):** Information-theoretic measure of label–cluster correspondence.
+
+---
+
+## 8. Miscellany
+
+### Sparse Matrix Architectures
+
+Sparse matrices — where the majority of elements are zero — require specialized storage to reduce memory footprint and enable faster computation. The principal formats are:
+
+| Format | Full Name              | Strategic Application |
+| :----- | :--------------------- | :-------------------- |
+| **DOK** | Dictionary of Keys    | Incremental matrix construction. |
+| **LIL** | List of Lists         | Row-wise modifications. |
+| **COO** | Coordinate List       | Building matrices; requires sorting for efficient access. |
+| **CSR** | Compressed Sparse Row | Numerical computation and row-wise operations. |
+| **CSC** | Compressed Sparse Column | Column-wise operations and slicing. |
+
+One-hot encoding categorical features (e.g., `track_genre`, `artists`) naturally produces very sparse matrices that benefit from CSR/CSC storage.
+
+### Graph Modeling: Collaboration Networks
+
+For datasets encoding 1:1 relations (e.g., artist collaborations), **Graphs** $G = (V, E)$ capture connections that flat matrices cannot efficiently model. Multi-artist tracks naturally define edges in a weighted collaboration graph, where the weight represents co-occurrence frequency. Key metrics include degree centrality, betweenness centrality, and connected-component analysis.
+
+### Cross-Validation
+
+To obtain unbiased estimates of model performance, we use **Stratified K-Fold Cross-Validation** (typically $k = 5$ or $k = 10$). Stratification ensures each fold preserves the class distribution of the full dataset, which is essential under class imbalance.
+
+### The Curse of Dimensionality
+
+As the number of features $p$ grows, the volume of the feature space increases exponentially, causing data points to become sparse. Distance-based methods (KNN, K-Means) degrade because distances become nearly uniform. PCA is one of the primary tools to combat this effect by projecting data onto the most informative subspace.
+
+---
+
+## 9. Technology Stack
+
+* **Pandas:** High-level DataFrames for tabular data manipulation and analysis.
+* **NumPy:** Low-level array operations and linear algebra.
+* **SciPy:** Sparse matrix operations and scientific computing.
+* **Scikit-learn:** Machine learning algorithms (PCA, KNN, K-Means), preprocessing (StandardScaler, LabelEncoder), model selection (cross_val_score, GridSearchCV), and evaluation metrics.
+* **Matplotlib / Seaborn:** Statistical visualization.
+* **NetworkX:** Graph construction and analysis.
+
+---
+
+## 10. Implementation Phases
+
+1. **Phase 1 — Exploratory Data Analysis:** Statistical summaries, distribution plots, correlation analysis, outlier detection, class-balance assessment.
+2. **Phase 2 — Data Cleaning & Preprocessing:** Missing-value remediation, duplicate removal, feature scaling (StandardScaler), label encoding.
+3. **Phase 3 — Model Construction:**
+   - PCA for dimensionality reduction and visualization.
+   - KNN for genre classification with hyperparameter tuning.
+   - K-Means for unsupervised clustering.
+4. **Phase 4 — Model Validation:** Confusion matrices, classification reports, silhouette analysis, elbow plots, cross-validation scores.
 
 ### Evaluation Criteria
 
-Success is measured by **memory efficiency** (minimizing bandwidth via sparse architectures) and **data integrity** (mitigating bias through rigorous missingness handling). This framework ensures a unified, high-performance data engineering environment.
+Success is measured by:
+- **Classification accuracy and F1-score** of the KNN model.
+- **Silhouette score and visual coherence** of K-Means clusters.
+- **Variance preservation** in PCA dimensionality reduction.
+- **Data integrity** ensured through rigorous missingness handling and preprocessing.
