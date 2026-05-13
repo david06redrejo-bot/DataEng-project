@@ -1,7 +1,7 @@
 # Technical Design Report: Advanced Data Engineering for Music Classification
 
 ## Authors
-Pau Rossell & David Redrejo
+Pau Rossell, David Redrejo & Joan Almirall
 
 ---
 
