@@ -1,9 +1,1 @@
-numpy
-pandas
-scipy
-scikit-learn
-matplotlib
-jupyter
-kaggle
-seaborn
-networkx
+notebook

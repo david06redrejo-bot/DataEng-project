@@ -1,33 +1,29 @@
-# Advanced Data Engineering Project
+# Data Engineering Project, Group 19
 
 ## Overview
-This repository contains the advanced data engineering project structure, tailored to synthesize diverse data archetypes including structured matrices, sparse datasets, unstructured media, and relational graphs. 
+This repository contains the data engineering project structure for group 19, composed by David Redrejo Pérez, Joan Almirall Viñas, and Pau Rossell Martinez. It aims to explore, understand and process a large dataset "🎹 Spotify Tracks Dataset" by MAHARSHIPANDYA using the tools that we have learnt thoughout the Data Engineering course.
 
 ## Project Structure
 ```
 PROJECT/
 ├── data/
-│   ├── raw/             # Raw data downloaded from Kaggle or other sources
-│   └── processed/       # Cleaned and processed data ready for modeling
-├── notebooks/           # Jupyter notebooks for exploratory data analysis and modeling
-│   └── 01_exploratory_data_analysis.ipynb
-├── scripts/             # Python scripts for data processing
-├── reports/             # Generated analysis, theoretical notes (Latex/Markdown)
-├── context.md           # The Technical Design Report
-├── README.md            # The top-level project overview
-└── requirements.txt     # The required dependencies to run the project
+│   ├── raw/                # Raw data downloaded from Kaggle or other sources
+│   │   └── dataset.csv     # Contents of Spotify Tracks Dataset as a CSV
+│   └── processed/          # Cleaned and processed data ready for modeling
+├── notebooks/              
+│   └── 01_EDA.ipynb        # Exploratory Data Analisys on the dataset
+├── scripts/                # Python scripts for data processing
+├── report                   
+│   └── report.tex          # Generated analysis (Latex)
+├── README.md               # The top-level project overview
+├── requirements.txt        # The required dependencies to run the project
+└── .gitignore              # Files not tracked by the repository
 ```
 
-## Setup and Prerequisites
-
-### 1. Requirements
-Ensure Python 3 is installed. To test and run the code, use the following `pip` command to install dependencies:
-```bash
-pip install -r requirements.txt
-```
-
-### 2. Ingesting Data from Kaggle
-Download your targeted dataset from the Kaggle platform and manually extract the CSV files into the `data/raw/` directory.
+## The Dataset
+["🎹 Spotify Tracks Dataset" by MAHARSHIPANDYA][def]
 
 ## Author
-Developed by Pau Rossell and David Redrejo.
+Developed by David Redrejo Pérez, Joan Almirall Viñas, and Pau Rossell Martinez.
+
+[def]: https://www.kaggle.com/datasets/maharshipandya/-spotify-tracks-dataset

@@ -14,4 +14,15 @@ data/raw/*
 !data/raw/.keep
 data/processed/*
 !data/processed/.keep
-download/
+
+# LaTeX build artifacts
+*.aux
+*.log
+*.out
+*.toc
+*synctex.gz
+*fdb_latexmk
+*.fls
+
+# Extra
+*.DS_Store
