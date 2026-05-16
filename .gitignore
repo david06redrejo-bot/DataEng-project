@@ -23,6 +23,9 @@ data/processed/*
 *synctex.gz
 *fdb_latexmk
 *.fls
+*.bbl
+*.blg
+*-eps-converted-to.pdf
 
 # Extra
 *.DS_Store

@@ -1,7 +1,7 @@
 # Data Engineering Project, Group 19
 
 ## Overview
-This repository contains the data engineering project structure for group 19, composed by David Redrejo Pérez, Joan Almirall Viñas, and Pau Rossell Martinez. It aims to explore, understand and process a large dataset "🎹 Spotify Tracks Dataset" by MAHARSHIPANDYA using the tools that we have learnt thoughout the Data Engineering course.
+This repository contains the data engineering project for group 19, composed by David Redrejo Pérez, Joan Almirall Viñas, and Pau Rossell Martinez. It aims to explore, understand and process a large dataset "🎹 Spotify Tracks Dataset" by MAHARSHIPANDYA using the tools that we have learnt thoughout the Data Engineering course.
 
 ## Project Structure
 ```
@@ -21,9 +21,9 @@ PROJECT/
 ```
 
 ## The Dataset
-["🎹 Spotify Tracks Dataset" by MAHARSHIPANDYA][def]
+[Maharshi Pandya. (2022). 🎹 Spotify Tracks Dataset [Dataset]. Kaggle. https://doi.org/10.34740/KAGGLE/DSV/4372070][def]
 
-## Author
+## Authors
 Developed by David Redrejo Pérez, Joan Almirall Viñas, and Pau Rossell Martinez.
 
 [def]: https://www.kaggle.com/datasets/maharshipandya/-spotify-tracks-dataset

@@ -1,0 +1,39 @@
+PREGUNTES:
+
+La data esta en format CSV, cal que explorem altres Data sharing formats??
+
+
+DATASET SEGONS EXPLICAT AL KAGGLE - Pau Rossell:
+114 000 entrades (cançons)
+
+Dades categoriques
+    89 741 track_id unics
+    31 438 artistes unics
+    46 590 albums unics
+    73 609 track names unics
+    114 generes unics
+
+Dades numeriques
+    Popularitat (0 - 100) esta sesgada cap a la dreta amb mitjana 33.2 i mediana 35
+    Duració en milisegons (0 - 5 240 000) clarament hi ha valors atipics
+    Loudness (-49.5 - 4.53)
+
+Dades booleanes
+    Explicitat 9%true 91%false
+
+
+Totes aquestes features cal entendre que volen dir i la fiabilitat (sobretot si les fem servir)
+    Danceability (0-1)
+    Energy (0-1)
+    Key (0-11)
+    Mode (0, 1)
+    Speechiness (0-0.96)
+    Acousticness (0-1)
+    Instrumentalness (0-1)
+    Liveness (0-1)
+    Valence (0-1)
+    Tempo (0-243)
+    Time signature (0-5)
+
+Metode de recoleccio de les dades (citant de Kaggle):
+    The data was collected and cleaned using Spotify's Web API and Python.
