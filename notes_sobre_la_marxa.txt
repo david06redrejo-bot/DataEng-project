@@ -37,3 +37,7 @@ Totes aquestes features cal entendre que volen dir i la fiabilitat (sobretot si 
 
 Metode de recoleccio de les dades (citant de Kaggle):
     The data was collected and cleaned using Spotify's Web API and Python.
+
+ESTADISTICA DESCRIPTIVA DEL DATASET - Pau Rossell:
+
+Usant pandas, 114 000 observacions exactes, 21 features exactes, incloient index de observacions.
