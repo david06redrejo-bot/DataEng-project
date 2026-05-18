@@ -10,11 +10,15 @@ PROJECT/
 │   ├── raw/                # Raw data downloaded from Kaggle or other sources
 │   │   └── dataset.csv     # Contents of Spotify Tracks Dataset as a CSV
 │   └── processed/          # Cleaned and processed data ready for modeling
-├── notebooks/              
+├── notebooks/
+│   ├── aux                 # Files auxiliary to the notebooks (e.g. .png images or .py scripts)        
 │   └── 01_EDA.ipynb        # Exploratory Data Analisys on the dataset
-├── scripts/                # Python scripts for data processing
 ├── report                   
-│   └── report.tex          # Generated analysis (Latex)
+│   ├── latex_report        # Files that compose the final LaTeX report
+│   │   ├── Report.tex      # The LaTeX source file for the report
+│   │   ├── Report.pdf      # The Report in pdf format
+│   │   └── report_media    # Images and files complementary to the report
+│   └── draft.tex           # Brief notes taken thoughout the elaboration of the project, to aid in making of report
 ├── README.md               # The top-level project overview
 ├── requirements.txt        # The required dependencies to run the project
 └── .gitignore              # Files not tracked by the repository
