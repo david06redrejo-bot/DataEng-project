@@ -38,6 +38,16 @@ Totes aquestes features cal entendre que volen dir i la fiabilitat (sobretot si 
 Metode de recoleccio de les dades (citant de Kaggle):
     The data was collected and cleaned using Spotify's Web API and Python.
 
+
+
 ESTADISTICA DESCRIPTIVA DEL DATASET - Pau Rossell:
 
-Usant pandas, 114 000 observacions exactes, 21 features exactes, incloient index de observacions.
+Usant pandas, 114 000 observacions exactes, 21 features exactes, incloient index d'observacions. Obtenim mitjançant pandas
+.info() i .describe() estadistiques descriptives sobre cada feature i observem de forma notable que hi ha un unic valor nul tant
+a artists com a album_name i a track_name. La distribucio de data types es la seguent: bool(1), float64(9), int64(6), str(5)
+
+Tambe notable destacar que una de les features del dataset (columna unnamed) conte l'index de cada linea, cosa que ens es 
+innecessaria perque un dataframe de panas ja guarda aquesta informacio.
+
+From pandas.describe() we can observe some numerical statistics, however the data distribution is unclear and not easy to
+interpret, so a visual data representation is preferable.
